@@ -1,62 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎬 MovieSearch Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineSearch - Movie Discovery App</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Apply theme immediately before rendering to prevent flash -->
+    <script>
+        (function() {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            if (isDark) {
+                document.documentElement.style.colorScheme = 'dark';
+            }
+        })();
+    </script>
 </head>
-<body class="bg-gray-900 min-h-screen">
-  <div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <header class="mb-12 text-center">
-      <h1 class="text-4xl md:text-5xl font-bold text-blue-500 mb-2">🎬 MovieSearch Pro</h1>
-      <p class="text-gray-400 text-lg">Find any movie instantly</p>
-    </header>
-
-    <!-- Search Section -->
-    <div class="max-w-2xl mx-auto mb-12">
-      <div class="flex flex-col sm:flex-row gap-4">
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Search for movies by title..." 
-          class="flex-grow px-6 py-3 rounded-full bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onkeypress="if(event.key === 'Enter') searchMovies()"
-        >
-        <button 
-          onclick="searchMovies()" 
-          class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold transition duration-300 flex items-center justify-center gap-2"
-        >
-          <i class="fas fa-search"></i> Search
+<body>
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle-container">
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">
+            <span class="theme-icon">🌙</span>
         </button>
-      </div>
     </div>
 
-    <!-- Results Section -->
-    <div id="loading" class="hidden text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-      <p class="text-gray-400">Searching for movies...</p>
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">🎬 CineSearch</h1>
+            <p class="subtitle">Discover Your Next Favorite Movie</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="search">
+                Search
+            </button>
+            <button class="nav-tab" data-tab="favorites">
+                ❤️ Favorites (<span id="favCount">0</span>)
+            </button>
+        </nav>
+
+        <!-- Search Section -->
+        <section class="search-section" id="searchTab">
+            <div class="search-container">
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-input"
+                    placeholder="Search movies, TV shows..."
+                    autocomplete="off"
+                >
+                <button id="searchBtn" class="search-btn">Search</button>
+            </div>
+
+            <!-- Filter Options -->
+            <div class="filters">
+                <label for="typeFilter">Type:</label>
+                <select id="typeFilter" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="movie">Movie</option>
+                    <option value="series">Series</option>
+                    <option value="episode">Episode</option>
+                </select>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message"></div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="loading-spinner hidden">
+                <div class="spinner"></div>
+                <p>Searching for movies...</p>
+            </div>
+
+            <!-- Initial Content Section -->
+            <div id="initialContent" class="initial-content">
+                <h2 id="initialTitle" class="initial-title"></h2>
+                <div id="initialGrid" class="movies-grid"></div>
+            </div>
+
+            <!-- Results Grid -->
+            <div id="moviesGrid" class="movies-grid"></div>
+
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container hidden">
+                <button id="prevBtn" class="pagination-btn">← Previous</button>
+                <span id="pageInfo" class="page-info"></span>
+                <button id="nextBtn" class="pagination-btn">Next →</button>
+            </div>
+        </section>
+
+        <!-- Favorites Section -->
+        <section class="favorites-section hidden" id="favoritesTab">
+            <div id="favoritesGrid" class="movies-grid"></div>
+            <div id="emptyFavorites" class="empty-state hidden">
+                <p>No favorites yet. Add movies to your favorites!</p>
+            </div>
+        </section>
     </div>
 
-    <div id="movies" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
-
-    <div id="noResults" class="hidden text-center py-12">
-      <i class="fas fa-film text-5xl text-gray-700 mb-4"></i>
-      <h3 class="text-2xl text-gray-300 mb-2">No movies found</h3>
-      <p class="text-gray-500">Try a different search term</p>
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="modal-body">
+                <div class="modal-poster">
+                    <img id="modalPoster" src="" alt="Movie Poster">
+                </div>
+                <div class="modal-details">
+                    <h2 id="modalTitle"></h2>
+                    <div class="modal-meta">
+                        <p><span class="label">Year:</span> <span id="modalYear"></span></p>
+                        <p><span class="label">Type:</span> <span id="modalType"></span></p>
+                        <p><span class="label">Runtime:</span> <span id="modalRuntime"></span></p>
+                        <p><span class="label">Genre:</span> <span id="modalGenre"></span></p>
+                        <p><span class="label">Director:</span> <span id="modalDirector"></span></p>
+                        <p><span class="label">IMDB Rating:</span> <span id="modalRating" class="rating"></span></p>
+                    </div>
+                    <div class="modal-plot">
+                        <h3>Plot</h3>
+                        <p id="modalPlot"></p>
+                    </div>
+                    <button id="modalFavBtn" class="modal-fav-btn">♡ Add to Favorites</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 py-6 mt-12">
-    <div class="container mx-auto px-4 text-center text-gray-400">
-      <p>Powered by OMDB API | © 2023 MovieSearch Pro</p>
-    </div>
-  </footer>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
